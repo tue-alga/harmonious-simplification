@@ -17,9 +17,8 @@ public class Main {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        Data.draw = new DrawPanel();
-        Data.side = new SidePanel();
-        GUIUtil.makeMainFrame("Parallelism", Data.draw, Data.side);
+        Data data = new Data();
+        GUIUtil.makeMainFrame("Harmonious simplification", data.draw, data.side);
     }
 
 }

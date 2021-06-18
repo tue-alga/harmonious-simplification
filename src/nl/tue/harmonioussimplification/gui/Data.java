@@ -9,103 +9,84 @@
  */
 package nl.tue.harmonioussimplification.gui;
 
-import nl.tue.harmonioussimplification.map.Map;
-import nl.tue.harmonioussimplification.algorithm.alignments.Alignment;
-import nl.tue.harmonioussimplification.algorithm.alignments.DTWAlignment;
-import nl.tue.harmonioussimplification.algorithm.alignments.LCFMAlign;
-import nl.tue.harmonioussimplification.algorithm.simplification.SlopeLadderSimplification;
-import nl.tue.harmonioussimplification.algorithm.simplification.Simplification;
-import nl.tue.harmonioussimplification.inputwrangling.IO;
-import java.io.File;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import nl.tue.geometrycore.io.ipe.IPEWriter;
+import nl.tue.harmonioussimplification.algorithms.LCFMAlignment;
+import nl.tue.harmonioussimplification.algorithms.SlopeLadderSimplification;
+import nl.tue.harmonioussimplification.data.input.InputMap;
+import nl.tue.harmonioussimplification.data.output.OutputMap;
+import nl.tue.harmonioussimplification.io.IPE;
 
 public class Data {
 
-    public static Map map = null;
+    // data
+    InputMap input;
+    OutputMap output;
 
-    public static Alignment[] aligners = { new LCFMAlign(), new DTWAlignment()};
-    public static Alignment selectedAligner = aligners[0];
+    // algorithms
+    LCFMAlignment align = new LCFMAlignment();
+    SlopeLadderSimplification simplify = new SlopeLadderSimplification();
 
-    public static Simplification[] simplifiers = {
-        new SlopeLadderSimplification()};
-    public static Simplification selectedSimplifier = simplifiers[0];
+    // settings
+    MapRendering draw_input = new MapRendering();
+    MapRendering draw_output = new MapRendering();
+    boolean split = true;
 
-    public static DrawPanel draw = null;
-    public static SidePanel side = null;
+    // must be last in variable declarations
+    final DrawPanel draw = new DrawPanel(this);
+    final SidePanel side = new SidePanel(this);
 
-    public static boolean autorun = false;
-    // draw settings
-    public static boolean showinput = true;
-    public static boolean showinputvertices = false;
-    public static boolean showoutput = true;
-    public static boolean showoutputvertices = false;
-    public static boolean showalgorithm = true;
-    public static boolean showalign = true;
-
-    public static void clearCache(boolean alignCache, boolean simplifyCache) {
-        if (map != null) {
-            map.clearCache(alignCache, simplifyCache);
-        }
-    }
-
-    public static void run(boolean runAlign, boolean runSimplify) {
-        if (map != null) {
-            clearCache(runAlign, runSimplify);
-            if (runAlign) {
-                selectedAligner.run(map);
-            }
-            if (runSimplify) {
-                selectedSimplifier.run(map);
-            }
-            draw.repaint();
-        }
-    }
-
-    public static void autorun(boolean runAlign, boolean runSimplify) {
-        if (autorun) {
-            run(runAlign, runSimplify);
-        } else {
-            clearCache(runAlign, runSimplify);
-            draw.repaint();
-        }
-    }
-
-    public static void save() {
-        if (map == null) {
-            return;
-        }
-        File f = new File("../output/" + map.processing + ".ipe");
-        f.getParentFile().mkdirs();
-        try (IPEWriter write = IPEWriter.fileWriter(f)) {
-            write.initialize();
-            write.newPage("input", "output", "aux", "align", "algorithm");
-            draw.render(write);
-        } catch (IOException ex) {
-            Logger.getLogger(DrawPanel.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
-    public static void loadClipboard() {
-        map = IO.readIPEClipboard();
-        autorun(true,true);
+    public void inputChanged() {
+        output = null;
         draw.zoomToFit();
+        simplify.clear();
     }
 
-    public static void copyToClipboard() {
-        IO.writeIPEClipboard(map);
+    public void alignmentChanged() {
+        draw.repaint();
+        simplify.clear();
+        output = null;
     }
-    
-    public static void renderToClipboard() {
-        try {
-            IPEWriter ipe = IPEWriter.clipboardWriter();
-            ipe.initialize();
-            draw.render(ipe);
-            ipe.close();
-        } catch (IOException ex) {
-            Logger.getLogger(Data.class.getName()).log(Level.SEVERE, null, ex);
+
+    public void pasteMap() {
+        input = IPE.readClipboard();
+        inputChanged();
+    }
+
+    public void align() {
+        if (input != null) {
+            align.run(input);
+            alignmentChanged();
         }
+    }
+
+    public void simplificationChanged() {
+        draw.repaint();
+    }
+
+    public void simplify() {
+        if (!simplify.isInitialized()) {
+            initialize();
+        }
+        simplify.run();
+        simplificationChanged();
+    }
+
+    public void initialize() {
+        output = simplify.initialize(input);
+        simplificationChanged();
+    }
+
+    public void stepSimplify() {
+        if (!simplify.isInitialized()) {
+            initialize();
+        }
+        simplify.step();
+        simplificationChanged();
+    }
+
+    public class MapRendering {
+
+        boolean isolines = true;
+        boolean vertices = false;
+        boolean alignment = true;
     }
 }

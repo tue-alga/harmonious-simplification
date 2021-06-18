@@ -6,7 +6,4 @@ while keeping the isolines similar to their original geometry and to each other.
 
 It builds on the GeometryCore (https://github.com/tue-alga/GeometryCore) and was developed under version v1.1.0.
 
-This version of the code supports only polygonal lines as isolines and was used in the experiments for:
-    Van Goethem et al, Harmonious Simplification of Isolines, Proc. GIScience 2021.
-The default settings correspond to the described algorithm. 
-Though the implementation in places uses simpler techniques than would be efficient in terms of run time.
+This version of the code supports both polygonal lines and polygons as isolines. It is re-implemented, based on the previous version, but due to changes in structures and implementation, this may give different results.
